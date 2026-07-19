@@ -11,22 +11,34 @@
 char* read_file(char* file_path);
 bool args_has(int argc, char** argv, char* target);
 bool args_has_any(int argc, char** argv, int targetc, const char** targetv);
+char** split_lines(char* buf);
 
 // gcc src/main.c -std=c17 -Wall -Wextra -Wpedantic -g -O0 -o out; ./out
 int main(int argc, char** argv) {
     if (argc == 1) {
-        printf("help page\n");
-        exit(0);
+        printf("Usage: %s <file> [-n | --number]\n", argv[0]);
+        return 0;
     }
 
+    char* file_path = argv[1];
+    char* buf = read_file(file_path);
+
     bool flag_number = ARGS_CONTAINS(argc, argv, "-n", "--number");
-    printf("%s\n", flag_number ? "true" : "false");
 
-    // char* file_path = argv[1];
-    // char* buf = read_file(file_path);
+    char** lines = split_lines(buf);
 
-    // printf("%s\n", buf);
+    if (flag_number) {
+        for (int i = 0; lines[i] != NULL; i++) {
+            printf("%6d %s\n", i + 1, lines[i]);
+        }
+    } else {
+        for (int i = 0; lines[i] != NULL; i++) {
+            printf("%s\n", lines[i]);
+        }
+    }
 
+    free(lines);
+    free(buf);
     return 0;
 }
 
@@ -73,4 +85,37 @@ bool args_has_any(int argc, char** argv, int targetc, const char** targetv) {
         }
     }
     return false;
+}
+
+char** split_lines(char* buf) {
+    size_t line_count = 0;
+    char* p = buf;
+    while (*p) {
+        if (*p == '\n') line_count++;
+        p++;
+    }
+    line_count++;
+
+    char** lines = malloc((line_count + 1) * sizeof(char*));
+    if (!lines) {
+        perror("malloc");
+        exit(1);
+    }
+
+    size_t idx = 0;
+    lines[idx++] = buf;
+
+    p = buf;
+    while (*p) {
+        if (*p == '\n') {
+            *p = '\0';
+            p++;
+            lines[idx++] = p;
+        } else {
+            p++;
+        }
+    }
+
+    lines[idx] = NULL;
+    return lines;
 }
